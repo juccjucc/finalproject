@@ -29,6 +29,13 @@ exclude=c(ex1,ex2,ex3)
 
 train1=train[,-exclude]
 
+
+
+# m=abs(cor(train1[,-49]))
+# diag(m)=0
+# new=which(m > 0.95, arr.ind=T) 
+# featurePlot(x = train1[, c(1:10)], y = train1$classe, plot = "pairs")
+
 set.seed(12345)
 
 #make sub test and sub training set
@@ -36,8 +43,6 @@ inTrain <- createDataPartition(y=train1$classe, p=0.75, list=FALSE)
 subtrain <- train1[inTrain,]
 subtest <- train1[-inTrain,]
 
-#cross validation k-fold, k=10
-ctrl <- trainControl(method = "cv", number = 10)
 #apply random forest
 mod_rf <- train(subtrain$classe ~.,method="rf", data=subtrain, ntree=10)
 #prediction
@@ -45,23 +50,35 @@ pred_rf <- predict(mod_rf, subtest)
 #confusion matrix
 confusionMatrix(subtest$classe,pred_rf)
 
-#tests:
-
-#mod_lda <- train(subtrain$classe ~.,method="lda", data=subtrain) 
-#pred_lda <- predict(mod_lda_cv, subtest)
-#conf_lda=confusionMatrix(subtest$classe,pred_lda)
-
-
-#mod_lda_cv <- train(subtrain$classe ~.,method="lda",trainControl=ctrl, data=subtrain) 
-#pred_lda_cv <- predict(mod_lda_cv, subtest)
-#conf_lda_cv=confusionMatrix(subtest$classe,pred_lda_cv)
+#cross validation k-fold, k=10
+ctrl <- trainControl(method = "cv", number = 10)
+#apply random forest
+mod_rf_cv <- train(subtrain$classe ~.,method="rf", trainControl= ctrl, data=subtrain, ntree=10)
+#prediction
+pred_rf_cv <- predict(mod_rf_cv, subtest)
+#confusion matrix
+confusionMatrix(subtest$classe,pred_rf_cv)
 
 
-#mod_rpart <- train(subtrain$classe ~.,method="rpart", data=subtrain)
-#pred_rpart <- predict(mod_rpart, subtest)
-#conf_rpart=confusionMatrix(subtest$classe,pred_rpart)
+mod_lda <- train(subtrain$classe ~.,method="lda", data=subtrain) 
+pred_lda <- predict(mod_lda, subtest)
+conf_lda=confusionMatrix(subtest$classe,pred_lda)
 
 
-#mod_gbm <- train(subtrain$classe ~.,method="gbm", n.trees=10, data=subtrain, verbose=FALSE)
-#pred_gbm <- predict(mod_gbm, subtest)
-#conf_gbm=confusionMatrix(subtest$classe,pred_gbm)
+mod_rpart <- train(subtrain$classe ~.,method="rpart", data=subtrain)
+pred_rpart <- predict(mod_rpart, subtest)
+conf_rpart=confusionMatrix(subtest$classe,pred_rpart)
+
+#final prediction
+final_pred_rf <- predict(mod_rf, testing)
+final_pred_rf
+
+prediction=as.character(final_pred_rf)
+testID=test$problem_id
+result=cbind(testID,prediction)
+
+
+
+
+
+
