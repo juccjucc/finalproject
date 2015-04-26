@@ -1,0 +1,67 @@
+library(caret)
+library(ggplot2)
+library(randomForest)
+
+swd="C:/Users/11620943/Desktop/machinelearningPROJECT"
+
+test= read.csv("C:/Users/11620943/Desktop/machinelearningPROJECT/pml-testing.csv")
+train_original= read.csv("C:/Users/11620943/Desktop/machinelearningPROJECT/pml-training.csv")
+
+# delete the rows where new_windows is yes because it is a summary and contains not relevant extra info
+train=split(train_original, train_original$new_window)$no  
+
+#columns that are not relevant: x, name, timeframe, numwindow
+#they are genereal information and not relevant for the experiment
+coltodelete <- c("X","user_name","raw_timestamp_part_1","raw_timestamp_part_2","cvtd_timestamp","num_window")
+ex1=which(names(train) %in% coltodelete)
+
+#columns with near zero variance
+ex2=nearZeroVar(train)
+
+#columns with too high freqRatio
+nz_details=nearZeroVar(train, saveMetrics = TRUE)  #returns the matrix
+nz2 <- subset(nz_details, freqRatio>20)
+mycols <- c("roll_arm","pitch_arm","yaw_arm","pitch_forearm")
+ex3=which(names(train) %in% mycols)
+
+#all the columns that need to be excluded
+exclude=c(ex1,ex2,ex3)
+
+train1=train[,-exclude]
+
+set.seed(12345)
+
+#make sub test and sub training set
+inTrain <- createDataPartition(y=train1$classe, p=0.75, list=FALSE) 
+subtrain <- train1[inTrain,]
+subtest <- train1[-inTrain,]
+
+#cross validation k-fold, k=10
+ctrl <- trainControl(method = "cv", number = 10)
+#apply random forest
+mod_rf <- train(subtrain$classe ~.,method="rf", data=subtrain, ntree=10)
+#prediction
+pred_rf <- predict(mod_rf, subtest)
+#confusion matrix
+confusionMatrix(subtest$classe,pred_rf)
+
+#tests:
+
+#mod_lda <- train(subtrain$classe ~.,method="lda", data=subtrain) 
+#pred_lda <- predict(mod_lda_cv, subtest)
+#conf_lda=confusionMatrix(subtest$classe,pred_lda)
+
+
+#mod_lda_cv <- train(subtrain$classe ~.,method="lda",trainControl=ctrl, data=subtrain) 
+#pred_lda_cv <- predict(mod_lda_cv, subtest)
+#conf_lda_cv=confusionMatrix(subtest$classe,pred_lda_cv)
+
+
+#mod_rpart <- train(subtrain$classe ~.,method="rpart", data=subtrain)
+#pred_rpart <- predict(mod_rpart, subtest)
+#conf_rpart=confusionMatrix(subtest$classe,pred_rpart)
+
+
+#mod_gbm <- train(subtrain$classe ~.,method="gbm", n.trees=10, data=subtrain, verbose=FALSE)
+#pred_gbm <- predict(mod_gbm, subtest)
+#conf_gbm=confusionMatrix(subtest$classe,pred_gbm)
